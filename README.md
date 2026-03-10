@@ -23,7 +23,7 @@ Simulador educativo interactivo para visualizar, paso a paso, la ejecución de c
   
 ## Descripción del proyecto  
   
-Esta aplicación web es un simulador educativo **sin dependencias de ejecución** diseñado para mostrar de forma visual cómo se comporta la memoria RAM y el banco de registros durante la ejecución de una función estrictamente recursiva en **RISC-V**.  
+Esta aplicación web es un simulador educativo **sin dependencias de ejecución** diseñado para mostrar de forma visual cómo se comporta la memoria  y el banco de registros durante la ejecución de una función estrictamente recursiva en **RISC-V**.  
   
 El algoritmo simulado es una implementación recursiva del **producto escalar** (`dotprod`) entre dos vectores enteros. La simulación sigue de manera rigurosa los convenios oficiales de llamada a subrutinas de RISC-V:  
   
@@ -41,7 +41,7 @@ El objetivo principal es que el estudiante pueda **ver** lo que normalmente solo
 Este simulador ha sido creado para ayudar a comprender visualmente conceptos clave de arquitectura de computadores:  
   
 - Entender por qué la pila crece hacia **direcciones descendentes**.  
-- Visualizar múltiples **stack frames** coexistiendo en memoria durante la recursividad.  
+- Visualizar múltiples **stack fes** coexistiendo en memoria durante la recursividad.  
 - Comprender por qué es necesario preservar `ra` y los registros salvados (`s1-s11`, `fp`) antes de ejecutar una llamada.  
 - Observar cómo el procesador restaura el estado previo de ejecución al desapilar durante el retorno recursivo.  
 - Relacionar instrucciones ensamblador concretas con su efecto real sobre memoria y registros.  
@@ -78,12 +78,12 @@ Cuando `n = 0`, se alcanza el **caso base** y finaliza la recursividad.
 
 ## Cómo funciona la simulación
 
-La herramienta se divide en **tres paneles sincronizados en tiempo real**:
+La herienta se divide en **tres paneles sincronizados en tiempo real**:
 
 ### 1. Panel de código ensamblador
 
 Muestra el código fuente ejecutado línea a línea.  
-La instrucción actual se resalta para facilitar el seguimiento del flujo del programa, incluidos:
+La instrucción actual se resalta para facilitar el seguimiento del flujo del proga, incluidos:
 
 -   saltos condicionales,
     
@@ -116,7 +116,7 @@ Además, muestra el estado en vivo de:
 
 Los registros modificados en el ciclo actual se iluminan para mejorar la legibilidad.
 
-### 3. Panel de memoria RAM (pila)
+### 3. Panel de memoria  (pila)
 
 Representa visualmente la memoria mediante coordenadas absolutas, diferenciando entre:
 
@@ -152,7 +152,7 @@ Esto permite observar físicamente el crecimiento y decrecimiento de la pila dur
 
 ## Limitaciones técnicas
 
-Este software ha sido diseñado como una herramienta **educativa** y, por tanto, incorpora ciertas simplificaciones deliberadas:
+Este software ha sido diseñado como una herienta **educativa** y, por tanto, incorpora ciertas simplificaciones deliberadas:
 
 ### Direcciones de memoria
 
@@ -168,9 +168,9 @@ En entornos reales o en otros simuladores como **RARS**, **Venus** o hardware f�
 
 ### Uso de registros temporales
 
-La asignación de registros temporales (`t0`, `t1`, `t2`, etc.) es puramente ilustrativa. Una implementación real puede variar según:
+La asignación de registros temporales (`t0`, `t1`, `t2`, etc.) es puente ilustrativa. Una implementación real puede variar según:
 
--   el programador,
+-   el progador,
     
 -   el compilador,
     
