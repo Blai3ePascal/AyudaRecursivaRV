@@ -46,33 +46,6 @@ Este simulador ha sido creado para ayudar a comprender visualmente conceptos cla
 - Observar cómo el procesador restaura el estado previo de ejecución al desapilar durante el retorno recursivo.  
 - Relacionar instrucciones ensamblador concretas con su efecto real sobre memoria y registros.  
   
----  
-  
-## Base matemática y algorítmica  
-  
-El simulador resuelve el producto escalar recursivo mediante la relación de recurrencia:  
-  
-
-Resultado = mul(V[n-1], W[n-1]) + dotprod(V, W, n-1)
-
-### Significado de cada término
-
--   **`Resultado`**: valor escalar final devuelto por la función, almacenado en el registro de retorno principal `a0`.
-    
--   **`mul`**: subrutina auxiliar encargada de multiplicar dos enteros sin usar extensión de multiplicación por hardware.
-    
--   **`V[n-1]`**: valor de la última posición válida actual del primer vector.
-    
--   **`W[n-1]`**: valor de la última posición válida actual del segundo vector.
-    
--   **`dotprod`**: llamada recursiva a la propia función principal.
-    
--   **`V, W`**: direcciones base en memoria de los arreglos originales.
-    
--   **`n-1`**: tamaño reducido del problema en cada nivel de recursión.
-    
-
-Cuando `n = 0`, se alcanza el **caso base** y finaliza la recursividad.
 
 ---
 
