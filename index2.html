@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Educativo: Suma Recursiva de Vector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .highlight { background-color: rgba(234, 179, 8, 0.4); border-left: 4px solid #eab308; }
+        .stack-enter { animation: slideIn 0.3s ease-out forwards; }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-10px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .reg-changed {
+            outline: 4px solid #eab308; 
+            transform: scale(1.05);
+            background-color: #fefce8 !important; 
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            z-index: 10;
+            transition: all 0.3s ease;
+        }
+        .reg-normal {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <header class="bg-indigo-900 text-white p-4 shadow-md flex justify-between items-center z-20 relative">
+        <div>
+            <h1 class="text-2xl font-bold">Guía Práctica: Suma Recursiva de un Vector</h1>
+            <p class="text-sm opacity-90 text-indigo-200 font-mono mt-1">Vector V = {10, 20, 30, 40}. Tamaño ``N=4''.</p>
+        </div>
+        <div class="flex flex-col items-end gap-2 w-1/3">
+            <div class="flex gap-2 w-full justify-end">
+                <button id="btn-prev" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded disabled:opacity-50 transition text-sm" onclick="prevStep()">&#8592; Anterior</button>
+                <button id="btn-next" class="bg-green-500 hover:bg-green-400 px-5 py-1.5 rounded text-white font-bold transition shadow-lg" onclick="nextStep()">Siguiente Paso &#8594;</button>
+                <button id="btn-reset" class="bg-red-500 hover:bg-red-400 px-3 py-1.5 rounded text-white transition text-sm" onclick="reset()">Reiniciar</button>
+            </div>
+            <div class="w-full flex items-center gap-2">
+                <span class="text-xs text-indigo-300">Progreso:</span>
+                <input type="range" id="progress-slider" min="0" max="100" value="0" class="w-full cursor-pointer accent-green-400" oninput="jumpToStep(this.value)">
+                <span id="step-counter" class="text-xs font-mono text-indigo-200">0/0</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-1 flex overflow-hidden">
+        <div class="w-1/4 bg-slate-900 text-gray-300 p-4 font-mono text-[11px] leading-tight overflow-y-auto border-r border-gray-700 shadow-inner">
+            <h2 class="text-white font-bold mb-2 border-b border-gray-700 pb-1 text-sm flex justify-between">
+                <span>Código RISC-V</span>
+            </h2>
+            <div id="code-container" class="whitespace-pre"></div>
+        </div>
+
+        <div class="w-2/4 flex flex-col bg-white overflow-y-auto border-r border-gray-300 relative">
+            
+            <div class="bg-indigo-50 border-b-4 border-indigo-400 p-4 shadow-sm sticky top-0 z-10">
+                <h3 class="font-bold text-indigo-800 text-lg mb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    ¿Qué está pasando ahora mismo?
+                </h3>
+                <div id="explanation" class="text-gray-700 text-[14px] leading-relaxed">
+                    Presiona "Siguiente Paso" para arrancar el simulador desde la instrucción principal.
+                </div>
+            </div>
+
+            <div class="p-4 flex-1">
+                <h2 class="text-base font-bold text-gray-700 mb-2 border-b pb-1">Estado de los Registros</h2>
+                
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div id="container-sp" class="reg-normal bg-red-50 p-2 rounded border border-red-200 flex justify-between items-center shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-red-700 text-sm">sp</span>
+                            <span class="text-[9px] text-red-600 font-bold uppercase">Stack Pointer (Pila)</span>
+                        </div>
+                        <span id="reg-sp" class="font-mono bg-white px-2 py-1 rounded shadow-inner text-sm font-bold border border-red-100">---</span>
+                    </div>
+                    <div id="container-ra" class="reg-normal bg-purple-50 p-2 rounded border border-purple-200 flex justify-between items-center shadow-sm">
+                        <div class="flex flex-col">
+                            <span class="font-bold text-purple-700 text-sm">ra</span>
+                            <span class="text-[9px] text-purple-600 font-bold uppercase">Return Address</span>
+                        </div>
+                        <span id="reg-ra" class="font-mono bg-white px-2 py-1 rounded shadow-inner text-sm border border-purple-100">0x0000</span>
+                    </div>
+
+                    <div class="col-span-2 mt-1"><span class="text-[10px] font-bold text-blue-500 uppercase tracking-wider border-b border-blue-100 pb-1 block">Argumentos y Retornos (a)</span></div>
+                    
+                    <div id="container-a0" class="reg-normal bg-blue-50 p-1.5 rounded border border-blue-200 flex justify-between items-center">
+                        <span class="font-bold text-blue-700 text-sm">a0 <span class="text-[10px] font-normal text-blue-500">(Dir V / Resultado)</span></span>
+                        <span id="reg-a0" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-a1" class="reg-normal bg-blue-50 p-1.5 rounded border border-blue-200 flex justify-between items-center">
+                        <span class="font-bold text-blue-700 text-sm">a1 <span class="text-[10px] font-normal text-blue-500">(Tamaño N)</span></span>
+                        <span id="reg-a1" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+
+                    <div class="col-span-2 mt-1"><span class="text-[10px] font-bold text-green-500 uppercase tracking-wider border-b border-green-100 pb-1 block">Registros Salvados (s) - Protegidos en Pila</span></div>
+
+                    <div id="container-s0" class="reg-normal bg-green-50 p-1.5 rounded border border-green-200 flex justify-between items-center shadow-sm">
+                        <span class="font-bold text-green-700 text-sm">s0 <span class="text-[10px] font-normal text-green-600">(Puntero Vector Seguro)</span></span>
+                        <span id="reg-s0" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-s1" class="reg-normal bg-green-50 p-1.5 rounded border border-green-200 flex justify-between items-center shadow-sm">
+                        <span class="font-bold text-green-700 text-sm">s1 <span class="text-[10px] font-normal text-green-600">(Tamaño N Seguro)</span></span>
+                        <span id="reg-s1" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-s2" class="reg-normal bg-green-50 p-1.5 rounded border border-green-200 flex justify-between items-center shadow-sm">
+                        <span class="font-bold text-green-700 text-sm">s2 <span class="text-[10px] font-normal text-green-600">(Resultado Recursivo)</span></span>
+                        <span id="reg-s2" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm font-bold">0</span>
+                    </div>
+                    <div></div> <!-- Spacer -->
+
+                    <div class="col-span-2 mt-1"><span class="text-[10px] font-bold text-yellow-500 uppercase tracking-wider border-b border-yellow-100 pb-1 block">Registros Temporales (t) - Para Cálculos</span></div>
+                    
+                    <div id="container-t0" class="reg-normal bg-yellow-50 p-1.5 rounded border border-yellow-200 flex justify-between items-center">
+                        <span class="font-bold text-yellow-700 text-sm">t0 <span class="text-[10px] font-normal">(Índice n-1)</span></span>
+                        <span id="reg-t0" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-t1" class="reg-normal bg-yellow-50 p-1.5 rounded border border-yellow-200 flex justify-between items-center">
+                        <span class="font-bold text-yellow-700 text-sm">t1 <span class="text-[10px] font-normal">(Desplaz. Bytes)</span></span>
+                        <span id="reg-t1" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-t2" class="reg-normal bg-yellow-50 p-1.5 rounded border border-yellow-200 flex justify-between items-center">
+                        <span class="font-bold text-yellow-700 text-sm">t2 <span class="text-[10px] font-normal">(Dir. exacta V[n-1])</span></span>
+                        <span id="reg-t2" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm">0</span>
+                    </div>
+                    <div id="container-t3" class="reg-normal bg-yellow-50 p-1.5 rounded border border-yellow-200 flex justify-between items-center">
+                        <span class="font-bold text-yellow-700 text-sm">t3 <span class="text-[10px] font-normal">(Valor extraído V[n-1])</span></span>
+                        <span id="reg-t3" class="font-mono bg-white px-1.5 py-0.5 rounded shadow-inner text-sm font-bold text-indigo-700">0</span>
+                    </div>
+                </div>
+                
+                <div class="mt-4 p-3 bg-gray-100 border border-gray-300 rounded shadow-inner flex justify-between items-center">
+                    <span class="text-sm font-bold text-gray-700">Variable Final en RAM: \`\`res''</span>
+                    <span id="mem-res" class="font-mono bg-white px-2 py-1 rounded border border-gray-200 text-gray-500 italic text-sm">vacío</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-1/4 bg-gray-50 p-4 flex flex-col border-l border-gray-300 relative shadow-inner">
+            <h2 class="text-lg font-bold text-red-800 mb-1 border-b pb-2 flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z" />
+                    <path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z" />
+                    <path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z" />
+                </svg>
+                Memoria (La Pila)
+            </h2>
+            <p class="text-[11px] text-gray-600 mb-3 leading-tight">La pila crece hacia abajo. Las cajas grises punteadas representan espacio reservado pero sin inicializar.</p>
+            
+            <div class="flex-1 overflow-y-auto relative p-2 border-2 border-dashed border-gray-300 rounded bg-white shadow-inner scroll-smooth" id="stack-scroll-container">
+                
+                <div class="w-full text-center text-gray-500 font-mono text-xs py-2 bg-gray-100 border border-gray-200 mb-1 sticky top-0 z-30 shadow-sm font-bold">
+                    0x20000 (Techo de la Pila)
+                </div>
+                
+                <div id="stack-coordinate-space" class="w-full relative">
+                    <div id="sp-indicator" class="absolute left-0 w-full border-t-[3px] border-red-500 transition-all duration-300 z-20 flex items-start justify-end" style="top: 0px; pointer-events: none;">
+                        <span class="bg-red-500 text-white text-[10px] font-bold px-2 py-1 rounded-b shadow-md">sp (Puntero actual)</span>
+                    </div>
+                    <div id="stack-frames" class="w-full relative"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const codeLines = [
+            "main:",
+            "    la sp, _stack",
+            "    la a0, V",
+            "    li a1, 4",
+            "    call suma_rec",
+            "    la t1, res",
+            "    sw a0, 0(t1)",
+            "fin:",
+            "    j fin",
+            "suma_rec:",
+            "    addi sp, sp, -16",
+            "    sw ra, 12(sp)",
+            "    sw s0, 8(sp)",
+            "    sw s1, 4(sp)",
+            "    sw s2, 0(sp)",
+            "    ble a1, zero, caso_base",
+            "    mv s0, a0",
+            "    mv s1, a1",
+            "    addi a1, s1, -1",
+            "    call suma_rec",
+            "    mv s2, a0",
+            "    addi t0, s1, -1",
+            "    add t1, t0, t0",
+            "    add t1, t1, t1",
+            "    add t2, s0, t1",
+            "    lw t3, 0(t2)",
+            "    add a0, t3, s2",
+            "    j epilogo",
+            "caso_base:",
+            "    li a0, 0",
+            "epilogo:",
+            "    lw ra, 12(sp)",
+            "    lw s0, 8(sp)",
+            "    lw s1, 4(sp)",
+            "    lw s2, 0(sp)",
+            "    addi sp, sp, 16",
+            "    ret"
+        ];
+
+        // Vector V con valores: 10, 20, 30, 40
+        const memV = [10, 20, 30, 40];
+        
+        function formatHex(num) {
+            return "0x" + num.toString(16).toUpperCase().padStart(4, '0');
+        }
+
+        function getExplanation(pc, regs) {
+            const hInstr = (name) => `<span class="font-bold text-indigo-700 bg-indigo-100 px-1 rounded">${name}</span>`;
+            const hReg = (name, color='gray') => `<span class="font-bold text-${color}-700 bg-${color}-100 px-1 rounded">${name}</span>`;
+            
+            switch(pc) {
+                case 0: return `<b>Programa Principal:</b> El procesador entra por la etiqueta \`\`main''. Vamos a inicializar el sistema para llamar a nuestra función recursiva.`;
+                case 1: return `${hInstr('la')} <b>(Load Address)</b>: Carga la dirección virtual \`\`_stack'' en el puntero de pila ${hReg('sp', 'red')}. Lo colocamos en el techo de memoria RAM (0x20000).`;
+                case 2: return `${hInstr('la')}: Carga la dirección de inicio en memoria del Vector V en el registro ${hReg('a0', 'blue')}. Este será el primer argumento.`;
+                case 3: return `${hInstr('li')} <b>(Load Immediate)</b>: Coloca el tamaño \`\`N=4'' en el argumento ${hReg('a1', 'blue')}. ¡Todo listo para la llamada!`;
+                case 4: return `${hInstr('call')}: Instrucción crítica. Salta a ejecutar la subrutina \`\`suma_rec''. El registro ${hReg('ra', 'purple')} anota automáticamente la línea 5 para saber a dónde volver.`;
+                case 5: return `${hInstr('la')}: ¡Hemos vuelto de la recursividad! Cargamos la dirección en memoria de la variable \`\`res'' en el registro temporal ${hReg('t1', 'yellow')}.`;
+                case 6: return `${hInstr('sw')} <b>(Store Word)</b>: Guardamos definitivamente el resultado total de la suma recursiva (que está en ${hReg('a0', 'blue')}) en la RAM.`;
+                case 7: return `Etiqueta \`\`fin'': Llegamos al final del programa principal.`;
+                case 8: return `${hInstr('j')}: Bucle infinito para finalizar la ejecución de forma limpia. ¡Problema resuelto!`;
+
+                case 9: return `<b>Subrutina suma_rec:</b> Inicio de la ejecución recursiva. Nos han pasado el tamaño del problema actual: \`\`N=${regs.a1}''.`;
+                case 10: return `${hInstr('addi')}: Resta 16 bytes al ${hReg('sp', 'red')}. La pila crece hacia abajo, creando 4 "cajas" grises reservadas para los registros que vamos a usar en este nivel.`;
+                case 11: return `${hInstr('sw')}: Guarda ${hReg('ra', 'purple')} (Dirección de Retorno) en la pila. Es obligatorio si vamos a hacer más llamadas recursivas.`;
+                case 12: return `${hInstr('sw')}: Guarda el registro original ${hReg('s0', 'green')} en la pila para no corromper la información que pudiera pertenecer a otra parte del programa.`;
+                case 13: return `${hInstr('sw')}: Guarda ${hReg('s1', 'green')} en la pila.`;
+                case 14: return `${hInstr('sw')}: Guarda ${hReg('s2', 'green')} en la pila base del marco actual. ¡El prólogo está completo y nuestro entorno es seguro!`;
+                case 15: return `${hInstr('ble')} <b>(Branch Less/Equal)</b>: Condición de parada. Si el tamaño \`\`N=${regs.a1}'' es <= 0, terminamos esta inmersión recursiva y saltamos a \`\`caso_base''.`;
+                case 16: return `${hInstr('mv')}: Copia el puntero del vector V desde ${hReg('a0', 'blue')} a ${hReg('s0', 'green')} para protegerlo de la sobreescritura antes de invocar otra función.`;
+                case 17: return `${hInstr('mv')}: Copia el tamaño actual \`\`N'' al registro protegido ${hReg('s1', 'green')}.`;
+                case 18: return `${hInstr('addi')}: Preparamos el subproblema. Resta 1 a \`\`N'' y lo guarda en el argumento ${hReg('a1', 'blue')}. El nuevo argumento para la recursividad es \`\`N=${regs.s1 - 1}''.`;
+                case 19: return `${hInstr('call')}: ¡Llamada recursiva a sí misma! El registro ${hReg('ra', 'purple')} anota la vuelta a la línea 20 y el flujo salta al inicio de \`\`suma_rec''.`;
+                case 20: return `${hInstr('mv')}: ¡Volvemos de la profundidad! El resultado devuelto por la recursividad (\`\`suma_rec(V, n-1)'') está en ${hReg('a0', 'blue')}. Lo resguardamos rápidamente en ${hReg('s2', 'green')}.`;
+                case 21: return `${hInstr('addi')}: Empezamos a buscar \`\`V[n-1]''. Restamos 1 a nuestro \`\`N'' original (${regs.s1}) para sacar el índice matemático: \`\`índice = ${regs.s1 - 1}''. Lo ponemos en ${hReg('t0', 'yellow')}.`;
+                case 22: return `${hInstr('add')}: ${hReg('t1', 'yellow')} = índice x 2 = ${regs.t0 * 2}.`;
+                case 23: return `${hInstr('add')}: ${hReg('t1', 'yellow')} = índice x 4 = ${regs.t0 * 4} bytes totales de desplazamiento en RAM.`;
+                case 24: return `${hInstr('add')}: Dirección final = Puntero Base seguro (${formatHex(regs.s0)}) + Desplazamiento en bytes (${regs.t1}) = ${formatHex(regs.s0 + regs.t1)}. Se aloja en ${hReg('t2', 'yellow')}.`;
+                case 25: {
+                    let val = memV[(regs.t2 - 0x1000)/4];
+                    return `${hInstr('lw')} <b>(Load Word)</b>: Va a la memoria a la dirección exacta \`\`t2'', extrae el valor \`\`V[n-1]'' (que es <b>${val}</b>) y lo pone en el registro ${hReg('t3', 'yellow')}.`;
+                }
+                case 26: return `${hInstr('add')}: ¡El corazón de la recursividad! FÓRMULA: \`\`Resultado'' = \`\`V[n-1]'' + \`\`suma_rec(V, n-1)''. Sumamos el valor extraído (${regs.t3}) con el acumulado recursivo que protegimos en s2 (${regs.s2}). Gran total = ${regs.t3 + regs.s2}, guardado directo en ${hReg('a0', 'blue')}.`;
+                case 27: return `${hInstr('j')}: Salto incondicional a \`\`epilogo'' para evitar procesar la línea del caso base.`;
+                case 28: return `Etiqueta \`\`caso_base'': \`\`N'' ha llegado a cero. Retornamos la suma de 0 para detener la inmersión recursiva.`;
+                case 29: return `${hInstr('li')}: Coloca un \`\`0'' literal en el registro de retorno principal ${hReg('a0', 'blue')}.`;
+                case 30: return `Etiqueta \`\`epilogo'': Nos preparamos para desmontar este marco de pila y liberar memoria.`;
+                case 31: return `${hInstr('lw')}: Restaura el registro ${hReg('ra', 'purple')} leyéndolo de la pila para no perdernos al regresar.`;
+                case 32: return `${hInstr('lw')}: Restaura el registro original ${hReg('s0', 'green')} desde la pila.`;
+                case 33: return `${hInstr('lw')}: Restaura el registro original ${hReg('s1', 'green')}.`;
+                case 34: return `${hInstr('lw')}: Restaura el registro original ${hReg('s2', 'green')}. Todos los registros protegidos vuelven a su ser original.`;
+                case 35: return `${hInstr('addi')}: Suma 16 al puntero ${hReg('sp', 'red')}. La pila sube físicamente y la memoria que acabamos de leer pasa a considerarse "basura". Marco destruido correctamente.`;
+                case 36: return `${hInstr('ret')} <b>(Return)</b>: Salto temporal hacia la dirección dictada por el registro ${hReg('ra', 'purple')}. Retornamos el control al nivel superior.`;
+
+                default: return "Ejecutando instrucción procesador RISC-V...";
+            }
+        }
+
+        function generateAllStates() {
+            let history = [];
+            let regs = { sp: 0, ra: 0, a0: 0, a1: 0, s0: 0, s1: 0, s2: 0, t0: 0, t1: 0, t2: 0, t3: 0 };
+            let memory = {}; 
+            let res_var = "vacío";
+            let callStackRA = []; 
+            let pc = 0; let step = 0;
+
+            while (pc <= 36 && step < 1000) {
+                let stackSnap = {};
+                for (let addr in memory) stackSnap[addr] = memory[addr];
+                
+                let spStr = regs.sp === 0 ? "---" : formatHex(regs.sp);
+                let raStr = regs.ra === 0 ? "0x0000" : formatHex(regs.ra);
+
+                history.push({ 
+                    line: pc, 
+                    regs: {...regs, spStr, raStr}, 
+                    stack: stackSnap, 
+                    res_var: res_var,
+                    msg: getExplanation(pc, regs) 
+                });
+
+                switch(pc) {
+                    case 0: pc++; break; 
+                    case 1: regs.sp = 0x20000; pc++; break; 
+                    case 2: regs.a0 = 0x1000; pc++; break; 
+                    case 3: regs.a1 = 4; pc++; break; 
+                    case 4: callStackRA.push(5); regs.ra = 5; pc = 9; break; 
+                    case 5: regs.t1 = 0x3000; pc++; break; 
+                    case 6: res_var = `${regs.a0} (${formatHex(regs.a0)})`; pc++; break; 
+                    case 7: pc++; break; 
+                    case 8: pc = 999; break; 
+
+                    case 9: pc++; break; 
+                    case 10: regs.sp -= 16; pc++; break; 
+                    case 11: memory[regs.sp + 12] = {v: formatHex(regs.ra), n: 'ra'}; pc++; break;
+                    case 12: memory[regs.sp + 8] = {v: formatHex(regs.s0), n: 's0'}; pc++; break;
+                    case 13: memory[regs.sp + 4] = {v: regs.s1, n: 's1'}; pc++; break;
+                    case 14: memory[regs.sp + 0] = {v: regs.s2, n: 's2'}; pc++; break;
+                    case 15: if (regs.a1 <= 0) pc = 28; else pc++; break; 
+                    case 16: regs.s0 = regs.a0; pc++; break;
+                    case 17: regs.s1 = regs.a1; pc++; break;
+                    case 18: regs.a1 = regs.s1 - 1; pc++; break;
+                    case 19: callStackRA.push(20); regs.ra = 20; pc = 9; break; 
+                    case 20: regs.s2 = regs.a0; pc++; break;
+                    case 21: regs.t0 = regs.s1 - 1; pc++; break;
+                    case 22: regs.t1 = regs.t0 * 2; pc++; break; 
+                    case 23: regs.t1 = regs.t1 * 2; pc++; break; 
+                    case 24: regs.t2 = regs.s0 + regs.t1; pc++; break;
+                    case 25: regs.t3 = memV[(regs.t2 - 0x1000) / 4]; pc++; break;
+                    case 26: regs.a0 = regs.t3 + regs.s2; pc++; break;
+                    case 27: pc = 30; break; 
+                    case 28: pc++; break; 
+                    case 29: regs.a0 = 0; pc++; break;
+                    case 30: pc++; break; 
+                    case 31: regs.ra = parseInt(memory[regs.sp + 12].v, 16) || parseInt(memory[regs.sp + 12].v); pc++; break;
+                    case 32: regs.s0 = parseInt(memory[regs.sp + 8].v, 16) || memory[regs.sp + 8].v; pc++; break;
+                    case 33: regs.s1 = memory[regs.sp + 4].v; pc++; break;
+                    case 34: regs.s2 = memory[regs.sp + 0].v; pc++; break;
+                    case 35: regs.sp += 16; pc++; break;
+                    case 36: if (callStackRA.length > 0) pc = callStackRA.pop(); else pc = 999; break;
+                }
+                step++;
+            }
+            return history;
+        }
+
+        const states = generateAllStates();
+        let currentState = 0;
+        
+        const codeContainer = document.getElementById('code-container');
+        codeLines.forEach((line, index) => {
+            const div = document.createElement('div');
+            div.id = `line-${index}`;
+            div.className = 'px-2 py-0.5 transition-colors duration-200';
+            div.textContent = line;
+            codeContainer.appendChild(div);
+        });
+
+        const slider = document.getElementById('progress-slider');
+        slider.max = states.length - 1;
+
+        function updateRegUI(regId, val, hasChanged) {
+            const spanEl = document.getElementById(`reg-${regId}`);
+            const containerEl = document.getElementById(`container-${regId}`);
+            spanEl.textContent = val;
+            
+            if (hasChanged) {
+                containerEl.classList.add('reg-changed');
+            } else {
+                containerEl.classList.remove('reg-changed');
+            }
+        }
+
+        function updateUI() {
+            const state = states[currentState];
+            const prevState = currentState > 0 ? states[currentState - 1] : state;
+            
+            slider.value = currentState;
+            document.getElementById('step-counter').textContent = `${currentState} / ${states.length - 1}`;
+
+            const formatVal = (v) => v >= 0x1000 ? formatHex(v) : v;
+            
+            updateRegUI('sp', state.regs.spStr, state.regs.spStr !== prevState.regs.spStr);
+            updateRegUI('ra', state.regs.raStr, state.regs.raStr !== prevState.regs.raStr);
+            
+            updateRegUI('a0', formatVal(state.regs.a0), state.regs.a0 !== prevState.regs.a0);
+            updateRegUI('a1', state.regs.a1, state.regs.a1 !== prevState.regs.a1);
+            
+            updateRegUI('s0', formatVal(state.regs.s0), state.regs.s0 !== prevState.regs.s0);
+            updateRegUI('s1', state.regs.s1, state.regs.s1 !== prevState.regs.s1);
+            updateRegUI('s2', state.regs.s2, state.regs.s2 !== prevState.regs.s2);
+            
+            updateRegUI('t0', state.regs.t0, state.regs.t0 !== prevState.regs.t0);
+            updateRegUI('t1', state.regs.t1, state.regs.t1 !== prevState.regs.t1);
+            updateRegUI('t2', formatVal(state.regs.t2), state.regs.t2 !== prevState.regs.t2);
+            updateRegUI('t3', state.regs.t3, state.regs.t3 !== prevState.regs.t3);
+
+            const resEl = document.getElementById('mem-res');
+            resEl.textContent = state.res_var;
+            if(state.res_var !== prevState.res_var) {
+                resEl.classList.add('bg-yellow-200', 'text-yellow-800', 'font-bold');
+                resEl.classList.remove('bg-white', 'text-gray-500', 'italic');
+            } else if (state.res_var === "vacío") {
+                resEl.classList.add('bg-white', 'text-gray-500', 'italic');
+                resEl.classList.remove('bg-yellow-200', 'text-yellow-800', 'font-bold');
+            }
+
+            document.getElementById('explanation').innerHTML = state.msg;
+
+            document.querySelectorAll('#code-container > div').forEach(div => div.classList.remove('highlight', 'text-black'));
+            const activeLine = document.getElementById(`line-${state.line}`);
+            if (activeLine) {
+                activeLine.classList.add('highlight', 'text-black');
+                activeLine.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            const spIndicator = document.getElementById('sp-indicator');
+            const baseHex = 0x20000;
+            const currentHex = state.regs.sp === 0 ? baseHex : state.regs.sp; 
+            const diffBytes = baseHex - currentHex;
+            
+            const pxPerByte = 12; 
+            const targetY = diffBytes * pxPerByte;
+            spIndicator.style.transform = `translateY(${targetY}px)`;
+
+            const stackScrollContainer = document.getElementById('stack-scroll-container');
+            stackScrollContainer.scrollTo({
+                top: targetY - (stackScrollContainer.clientHeight / 2) + 60,
+                behavior: 'smooth'
+            });
+
+            const stackFrames = document.getElementById('stack-frames');
+            stackFrames.innerHTML = ''; 
+
+            let addrSet = new Set(Object.keys(state.stack).map(Number));
+            for (let a = baseHex - 4; a >= currentHex; a -= 4) {
+                addrSet.add(a);
+            }
+            const addresses = Array.from(addrSet).sort((a, b) => b - a);
+            
+            const fullNames = {
+                'ra': 'ra - Dir. Retorno',
+                's0': 's0 - Puntero V Seguro',
+                's1': 's1 - Tamaño N Seguro',
+                's2': 's2 - Recursividad Segura'
+            };
+
+            addresses.forEach(addr => {
+                const item = state.stack[addr];
+                const isPopped = addr < currentHex;
+                const isReservedEmpty = !item && !isPopped;
+                const el = document.createElement('div');
+                
+                let bgCol = "bg-gray-100";
+                let nameHtml = "";
+                let valueHtml = "";
+
+                if (isReservedEmpty) {
+                    bgCol = "bg-gray-100 border-l-4 border-gray-400 opacity-80 border-dashed shadow-sm";
+                    nameHtml = `<span class="text-xs uppercase text-gray-500 mr-2">[RESERVADO]</span>`;
+                    valueHtml = `<span class="text-gray-400 italic font-bold">vacío</span>`;
+                } else if (!isPopped) {
+                    if(item.n === 'ra') bgCol = "bg-purple-100 border-l-4 border-purple-500 shadow-sm";
+                    else if(item.n === 's0') bgCol = "bg-green-100 border-l-4 border-green-500 shadow-sm";
+                    else bgCol = "bg-green-50 border-l border-green-300";
+
+                    nameHtml = `<span class="text-xs uppercase text-gray-500 mr-2">[${fullNames[item.n] || item.n}]</span>`;
+                    valueHtml = `<span class="font-bold ml-2 text-gray-900">${item.v}</span>`;
+                } else {
+                    bgCol = "bg-gray-200 text-gray-400 opacity-60"; 
+                    let itemName = item ? (fullNames[item.n] || item.n) : "BASURA";
+                    let itemVal = item ? item.v : "???";
+                    nameHtml = `<span class="text-xs uppercase text-gray-500 mr-2">[${itemName}]</span>`;
+                    valueHtml = `<span class="font-bold ml-2 line-through">${itemVal}</span>`;
+                }
+
+                el.className = `w-full text-sm font-mono px-3 py-1 flex items-center justify-between stack-enter ${bgCol}`;
+                el.style.position = 'absolute';
+                el.style.top = `${(baseHex - addr) * pxPerByte - (4 * pxPerByte)}px`; 
+                el.style.height = `${4 * pxPerByte}px`; 
+                
+                el.innerHTML = `
+                    <span class="text-gray-600 font-bold border-r border-gray-300 pr-2">${formatHex(addr)}</span> 
+                    <div class="flex-1 flex justify-end items-center">${nameHtml} ${valueHtml}</div>
+                `;
+                stackFrames.appendChild(el);
+            });
+            
+            document.getElementById('stack-coordinate-space').style.height = `${(baseHex - 0x1FDF0) * pxPerByte}px`;
+
+            document.getElementById('btn-prev').disabled = currentState === 0;
+            const btnNext = document.getElementById('btn-next');
+            if (currentState === states.length - 1) {
+                btnNext.textContent = "Finalizado";
+                btnNext.disabled = true;
+                btnNext.classList.replace('bg-green-500', 'bg-gray-500');
+            } else {
+                btnNext.textContent = "Siguiente Paso \u2192";
+                btnNext.disabled = false;
+                btnNext.classList.replace('bg-gray-500', 'bg-green-500');
+            }
+        }
+
+        function nextStep() { if (currentState < states.length - 1) { currentState++; updateUI(); } }
+        function prevStep() { if (currentState > 0) { currentState--; updateUI(); } }
+        function jumpToStep(val) { currentState = parseInt(val); updateUI(); }
+        function reset() { currentState = 0; updateUI(); }
+
+        updateUI();
+    </script>
+</body>
+</html>
