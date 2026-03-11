@@ -197,8 +197,7 @@
             "    call suma_rec",
             "    mv s2, a0",
             "    addi t0, s1, -1",
-            "    add t1, t0, t0",
-            "    add t1, t1, t1",
+            "    sll t1, t0, 2",
             "    add t2, s0, t1",
             "    lw t3, 0(t2)",
             "    add a0, t3, s2",
@@ -249,24 +248,23 @@
                 case 19: return `${hInstr('call')}: ¡Llamada recursiva a sí misma! El registro ${hReg('ra', 'purple')} anota la vuelta a la línea 20 y el flujo salta al inicio de \`\`suma_rec''.`;
                 case 20: return `${hInstr('mv')}: ¡Volvemos de la profundidad! El resultado devuelto por la recursividad (\`\`suma_rec(V, n-1)'') está en ${hReg('a0', 'blue')}. Lo resguardamos rápidamente en ${hReg('s2', 'green')}.`;
                 case 21: return `${hInstr('addi')}: Empezamos a buscar \`\`V[n-1]''. Restamos 1 a nuestro \`\`N'' original (${regs.s1}) para sacar el índice matemático: \`\`índice = ${regs.s1 - 1}''. Lo ponemos en ${hReg('t0', 'yellow')}.`;
-                case 22: return `${hInstr('add')}: ${hReg('t1', 'yellow')} = índice x 2 = ${regs.t0 * 2}.`;
-                case 23: return `${hInstr('add')}: ${hReg('t1', 'yellow')} = índice x 4 = ${regs.t0 * 4} bytes totales de desplazamiento en RAM.`;
-                case 24: return `${hInstr('add')}: Dirección final = Puntero Base seguro (${formatHex(regs.s0)}) + Desplazamiento en bytes (${regs.t1}) = ${formatHex(regs.s0 + regs.t1)}. Se aloja en ${hReg('t2', 'yellow')}.`;
-                case 25: {
+                case 22: return `${hInstr('sll')} <b>(Shift Left Logical)</b>: Desplaza los bits a la izquierda, equivalente a multiplicar por potencias de 2.<br><br><b>Operación:</b> ${hReg('t1', 'yellow')} = \`\`índice'' desplazado 2 veces (multiplicado por 4) = \`\`${regs.t0 * 4}'' bytes totales de desplazamiento en RAM.`;
+                case 23: return `${hInstr('add')}: Dirección final = Puntero Base seguro (${formatHex(regs.s0)}) + Desplazamiento en bytes (${regs.t1}) = ${formatHex(regs.s0 + regs.t1)}. Se aloja en ${hReg('t2', 'yellow')}.`;
+                case 24: {
                     let val = memV[(regs.t2 - 0x1000)/4];
                     return `${hInstr('lw')} <b>(Load Word)</b>: Va a la memoria a la dirección exacta \`\`t2'', extrae el valor \`\`V[n-1]'' (que es <b>${val}</b>) y lo pone en el registro ${hReg('t3', 'yellow')}.`;
                 }
-                case 26: return `${hInstr('add')}: ¡El corazón de la recursividad! FÓRMULA: \`\`Resultado'' = \`\`V[n-1]'' + \`\`suma_rec(V, n-1)''. Sumamos el valor extraído (${regs.t3}) con el acumulado recursivo que protegimos en s2 (${regs.s2}). Gran total = ${regs.t3 + regs.s2}, guardado directo en ${hReg('a0', 'blue')}.`;
-                case 27: return `${hInstr('j')}: Salto incondicional a \`\`epilogo'' para evitar procesar la línea del caso base.`;
-                case 28: return `Etiqueta \`\`caso_base'': \`\`N'' ha llegado a cero. Retornamos la suma de 0 para detener la inmersión recursiva.`;
-                case 29: return `${hInstr('li')}: Coloca un \`\`0'' literal en el registro de retorno principal ${hReg('a0', 'blue')}.`;
-                case 30: return `Etiqueta \`\`epilogo'': Nos preparamos para desmontar este marco de pila y liberar memoria.`;
-                case 31: return `${hInstr('lw')}: Restaura el registro ${hReg('ra', 'purple')} leyéndolo de la pila para no perdernos al regresar.`;
-                case 32: return `${hInstr('lw')}: Restaura el registro original ${hReg('s0', 'green')} desde la pila.`;
-                case 33: return `${hInstr('lw')}: Restaura el registro original ${hReg('s1', 'green')}.`;
-                case 34: return `${hInstr('lw')}: Restaura el registro original ${hReg('s2', 'green')}. Todos los registros protegidos vuelven a su ser original.`;
-                case 35: return `${hInstr('addi')}: Suma 16 al puntero ${hReg('sp', 'red')}. La pila sube físicamente y la memoria que acabamos de leer pasa a considerarse "basura". Marco destruido correctamente.`;
-                case 36: return `${hInstr('ret')} <b>(Return)</b>: Salto temporal hacia la dirección dictada por el registro ${hReg('ra', 'purple')}. Retornamos el control al nivel superior.`;
+                case 25: return `${hInstr('add')}: ¡El corazón de la recursividad! FÓRMULA: \`\`Resultado'' = \`\`V[n-1]'' + \`\`suma_rec(V, n-1)''. Sumamos el valor extraído (${regs.t3}) con el acumulado recursivo que protegimos en s2 (${regs.s2}). Gran total = ${regs.t3 + regs.s2}, guardado directo en ${hReg('a0', 'blue')}.`;
+                case 26: return `${hInstr('j')}: Salto incondicional a \`\`epilogo'' para evitar procesar la línea del caso base.`;
+                case 27: return `Etiqueta \`\`caso_base'': \`\`N'' ha llegado a cero. Retornamos la suma de 0 para detener la inmersión recursiva.`;
+                case 28: return `${hInstr('li')}: Coloca un \`\`0'' literal en el registro de retorno principal ${hReg('a0', 'blue')}.`;
+                case 29: return `Etiqueta \`\`epilogo'': Nos preparamos para desmontar este marco de pila y liberar memoria.`;
+                case 30: return `${hInstr('lw')}: Restaura el registro ${hReg('ra', 'purple')} leyéndolo de la pila para no perdernos al regresar.`;
+                case 31: return `${hInstr('lw')}: Restaura el registro original ${hReg('s0', 'green')} desde la pila.`;
+                case 32: return `${hInstr('lw')}: Restaura el registro original ${hReg('s1', 'green')}.`;
+                case 33: return `${hInstr('lw')}: Restaura el registro original ${hReg('s2', 'green')}. Todos los registros protegidos vuelven a su ser original.`;
+                case 34: return `${hInstr('addi')}: Suma 16 al puntero ${hReg('sp', 'red')}. La pila sube físicamente y la memoria que acabamos de leer pasa a considerarse "basura". Marco destruido correctamente.`;
+                case 35: return `${hInstr('ret')} <b>(Return)</b>: Salto temporal hacia la dirección dictada por el registro ${hReg('ra', 'purple')}. Retornamos el control al nivel superior.`;
 
                 default: return "Ejecutando instrucción procesador RISC-V...";
             }
@@ -280,7 +278,7 @@
             let callStackRA = []; 
             let pc = 0; let step = 0;
 
-            while (pc <= 36 && step < 1000) {
+            while (pc <= 35 && step < 1000) {
                 let stackSnap = {};
                 for (let addr in memory) stackSnap[addr] = memory[addr];
                 
@@ -312,28 +310,27 @@
                     case 12: memory[regs.sp + 8] = {v: formatHex(regs.s0), n: 's0'}; pc++; break;
                     case 13: memory[regs.sp + 4] = {v: regs.s1, n: 's1'}; pc++; break;
                     case 14: memory[regs.sp + 0] = {v: regs.s2, n: 's2'}; pc++; break;
-                    case 15: if (regs.a1 <= 0) pc = 28; else pc++; break; 
+                    case 15: if (regs.a1 <= 0) pc = 27; else pc++; break; 
                     case 16: regs.s0 = regs.a0; pc++; break;
                     case 17: regs.s1 = regs.a1; pc++; break;
                     case 18: regs.a1 = regs.s1 - 1; pc++; break;
                     case 19: callStackRA.push(20); regs.ra = 20; pc = 9; break; 
                     case 20: regs.s2 = regs.a0; pc++; break;
                     case 21: regs.t0 = regs.s1 - 1; pc++; break;
-                    case 22: regs.t1 = regs.t0 * 2; pc++; break; 
-                    case 23: regs.t1 = regs.t1 * 2; pc++; break; 
-                    case 24: regs.t2 = regs.s0 + regs.t1; pc++; break;
-                    case 25: regs.t3 = memV[(regs.t2 - 0x1000) / 4]; pc++; break;
-                    case 26: regs.a0 = regs.t3 + regs.s2; pc++; break;
-                    case 27: pc = 30; break; 
-                    case 28: pc++; break; 
-                    case 29: regs.a0 = 0; pc++; break;
-                    case 30: pc++; break; 
-                    case 31: regs.ra = parseInt(memory[regs.sp + 12].v, 16) || parseInt(memory[regs.sp + 12].v); pc++; break;
-                    case 32: regs.s0 = parseInt(memory[regs.sp + 8].v, 16) || memory[regs.sp + 8].v; pc++; break;
-                    case 33: regs.s1 = memory[regs.sp + 4].v; pc++; break;
-                    case 34: regs.s2 = memory[regs.sp + 0].v; pc++; break;
-                    case 35: regs.sp += 16; pc++; break;
-                    case 36: if (callStackRA.length > 0) pc = callStackRA.pop(); else pc = 999; break;
+                    case 22: regs.t1 = regs.t0 << 2; pc++; break; 
+                    case 23: regs.t2 = regs.s0 + regs.t1; pc++; break;
+                    case 24: regs.t3 = memV[(regs.t2 - 0x1000) / 4]; pc++; break;
+                    case 25: regs.a0 = regs.t3 + regs.s2; pc++; break;
+                    case 26: pc = 29; break; 
+                    case 27: pc++; break; 
+                    case 28: regs.a0 = 0; pc++; break;
+                    case 29: pc++; break; 
+                    case 30: regs.ra = parseInt(memory[regs.sp + 12].v, 16) || parseInt(memory[regs.sp + 12].v); pc++; break;
+                    case 31: regs.s0 = parseInt(memory[regs.sp + 8].v, 16) || memory[regs.sp + 8].v; pc++; break;
+                    case 32: regs.s1 = memory[regs.sp + 4].v; pc++; break;
+                    case 33: regs.s2 = memory[regs.sp + 0].v; pc++; break;
+                    case 34: regs.sp += 16; pc++; break;
+                    case 35: if (callStackRA.length > 0) pc = callStackRA.pop(); else pc = 999; break;
                 }
                 step++;
             }
